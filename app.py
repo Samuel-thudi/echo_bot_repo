@@ -15,6 +15,10 @@ from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.integration.aiohttp import CloudAdapter, ConfigurationBotFrameworkAuthentication
 from botbuilder.schema import Activity, ActivityTypes
 from botbuilder.schema import Activity, ActivityTypes
+from botbuilder.integration.applicationinsights.aiohttp import (
+    AiohttpTelemetryProcessor,
+    bot_telemetry_middleware,
+)
 
 from bots import EchoBot
 from config import DefaultConfig
@@ -77,11 +81,17 @@ async def messages(req: Request) -> Response:
     return Response(status=HTTPStatus.OK)
 
 
-APP = web.Application(middlewares=[aiohttp_error_middleware])
-APP.router.add_post("/api/messages", messages)
+
+def init_func(argv):
+        
+    app = web.Application(middlewares=[bot_telemetry_middleware, aiohttp_error_middleware])
+    app.router.add_post("/api/messages", messages)
+    return app
+
 
 if __name__ == "__main__":
+    APP = init_func(None)
     try:
-        web.run_app(APP, host="localhost", port=CONFIG.PORT)
+        web.run_app(APP, host="0.0.0.0", port=CONFIG.PORT)
     except Exception as error:
         raise error
